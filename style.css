@@ -31,6 +31,13 @@ body{
     box-shadow: 0 0 15px black;
 }
 
+#map{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+   flex-direction: column;
+}
+
 .container h1{
     font-size: 3rem;
     font-weight: 900;
@@ -85,3 +92,14 @@ nav button:hover{
     color: #00adb5;
 }
 
+/* Legend */
+
+#legend{
+    margin-top: 20px;
+    display: grid;
+   grid-template-columns: 4 1fr;
+}
+.legend-item{
+    margin-right: 10px;
+    display: inline-block;
+}

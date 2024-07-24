@@ -27,7 +27,7 @@ let data = dataset.kickstarter;
 
 // set dimensions
 const width = 960,
-    height = 600,
+    height = 700,
     margin = {
         top: 20,
         right: 20,
@@ -62,11 +62,7 @@ const tooltip = d3.select("body").append("div")
     .attr("id", "tooltip")
     .style("opacity", 0);
 
-// create svg
-const svg = d3.select('#map')
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+
 
 // add event listeners
 navigation.select("#kickstarter").on("click", () => {
@@ -84,9 +80,18 @@ navigation.select("#videogame").on("click", () => {
 
 // update
 const update = () => {
-    //clean svg
-    svg.selectAll("*").remove();
-    
+    //clean #map
+    d3.select("#map").selectAll("*").remove();
+
+    // create svg
+    const svg = d3.select('#map')
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", "translate(0,0)");
+
+
     // update title and description
     title.text(data.title);
     description.text(data.description);
@@ -94,7 +99,7 @@ const update = () => {
     // load data
     d3.json(data.url).then(data => {
         // process data
-        const root= d3.hierarchy(data)
+        const root = d3.hierarchy(data)
             .sum(d => d.value)
             .sort((a, b) => b.value - a.value);
 
@@ -116,18 +121,73 @@ const update = () => {
         cell
             .append("rect")
             .attr("class", "tile")
+            .attr("data-name", d => d.data.name)
+            .attr("data-category", d => d.parent.data.name)
+            .attr("data-value", d => d.data.value)
             .attr("width", d => d.x1 - d.x0)
             .attr("height", d => d.y1 - d.y0)
             .attr("fill", d => d3.schemeCategory10[d.parent.data.name.charCodeAt(0) % 10]);
-            
+
+        // add event listeners
+        cell
+            .on("mouseover", function (event, d) {
+
+
+                // show tooltip
+                tooltip.html(
+                    `Name: ${d.data.name}<br/>Category: ${d.parent.data.name}<br/>Value: ${d.data.value}`
+                )
+                tooltip.transition()
+                    .duration(0)
+                    .style("opacity", 0.8)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+
+            })
+            .on("mouseout", function () {
+
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
+
         // add labels
         cell
             .append("text")
-            .attr("class", "tile-label")
+            .selectAll("tspan")
+            .data(d => d.data.name.split(/(?=[A-Z][a-z])/g))
+            .enter()
+            .append("tspan")
+            .style("font-size", "10px")
             .attr("x", 4)
-            .attr("y", 15)
-            .text(d => d.data.name);
-            
+            .attr("y", (d, i) => 15 + i * 10)
+            .text(d => d);
+
+        // create legend
+        const categories = root.children.map(d => d.data.name);
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const legend = d3.select("#map")
+            .append("svg")
+            .attr("id", "legend")
+            .attr("width", "600")
+            .selectAll("g")
+            .data(categories)
+            .enter()
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", (d, i) => `translate(${(i % 3) * 200}, ${Math.floor(i / 3) * 20})`);
+        legend
+            .append("rect")
+            .attr("width", 15)
+            .attr("height", 15)
+            .attr("fill", d => colorScale(d));
+
+        legend
+            .append("text")
+            .attr("x", 24)
+            .attr("y", 13)
+            .text(d => d);
     })
 }
 
