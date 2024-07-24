@@ -57,6 +57,11 @@ const description = d3.select(".container")
     .insert("div", ":nth-child(2)")
     .attr("id", "description");
 
+// create tooltip
+const tooltip = d3.select("body").append("div")
+    .attr("id", "tooltip")
+    .style("opacity", 0);
+
 // create svg
 const svg = d3.select('#map')
     .append("svg")
@@ -67,24 +72,63 @@ const svg = d3.select('#map')
 navigation.select("#kickstarter").on("click", () => {
     data = dataset.kickstarter;
     update();
-    console.log(data)
 })
 navigation.select("#movie").on("click", () => {
     data = dataset.movie;
     update();
-    console.log(data)
 })
 navigation.select("#videogame").on("click", () => {
     data = dataset.videogame;
     update();
-    console.log(data)
 })
 
 // update
 const update = () => {
+    //clean svg
+    svg.selectAll("*").remove();
+    
+    // update title and description
     title.text(data.title);
     description.text(data.description);
 
+    // load data
+    d3.json(data.url).then(data => {
+        // process data
+        const root= d3.hierarchy(data)
+            .sum(d => d.value)
+            .sort((a, b) => b.value - a.value);
+
+        // create treemap layout
+        const treemap = d3.treemap()
+            .size([width, height])
+            .padding(1);
+
+        treemap(root);
+
+        // draw treemap
+        const cell = svg
+            .selectAll("g")
+            .data(root.leaves())
+            .enter()
+            .append("g")
+            .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+        cell
+            .append("rect")
+            .attr("class", "tile")
+            .attr("width", d => d.x1 - d.x0)
+            .attr("height", d => d.y1 - d.y0)
+            .attr("fill", d => d3.schemeCategory10[d.parent.data.name.charCodeAt(0) % 10]);
+            
+        // add labels
+        cell
+            .append("text")
+            .attr("class", "tile-label")
+            .attr("x", 4)
+            .attr("y", 15)
+            .text(d => d.data.name);
+            
+    })
 }
 
 window.onload = update;
